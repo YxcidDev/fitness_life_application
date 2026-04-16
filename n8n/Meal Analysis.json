@@ -1,0 +1,179 @@
+{
+  "name": "Meal Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "3e473ea5-b834-4bb4-a0f3-527c77028958",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d2b6237a-34b9-432e-be32-34a9ee1607ff",
+      "name": "Webhook",
+      "webhookId": "3e473ea5-b834-4bb4-a0f3-527c77028958"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Analiza la imagen de comida adjunta. Identifica el plato y calcula sus calorías, proteínas, carbohidratos y grasas. También desglosa los ingredientes principales en una lista.",
+        "hasOutputParser": true,
+        "options": {
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "7a31919e-02cd-4fa4-8e9b-0717a9bd08e7",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "maxTries": 5,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        368,
+        208
+      ],
+      "id": "887be5d1-3cf0-486c-b1ef-e424e1f2cba6",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "tMmOT3MvPeQyUvnv",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"meal_name\": \"Pollo con arroz y ensalada\",\n  \"nutrients\": {\n    \"calories\": 450,\n    \"proteins\": 35.5,\n    \"carbs\": 50.0,\n    \"fats\": 12.0\n  },\n  \"image_url\": \"https://url-de-la-imagen.com\",\n  \"analyzed_at\": \"2026-04-14T12:55:00Z\",\n  \"items\": [\n    {\n      \"name\": \"Pechuga de pollo\",\n      \"grams\": 150,\n      \"calories\": 250,\n      \"proteins\": 30,\n      \"carbs\": 0,\n      \"fats\": 5\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        208
+      ],
+      "id": "422d61bd-519c-4a11-9b65-c09ce94d6380",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "body.image",
+        "options": {
+          "fileName": "food.png",
+          "mimeType": "image/png"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "18ab60c0-4aa7-4ca3-8f3f-1ae5249298da",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        752,
+        0
+      ],
+      "id": "40ca2cc7-e6c1-4e5e-bd3f-39902084b8b1",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "841ed39b-eb4f-49e0-9091-ff504e22a498",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9c76ca3af867c4c468cfff51e339bef72fea5d69e07d9abf8a719e5a9be0fc9b"
+  },
+  "id": "IIVC4ZpQPl7z8YLm",
+  "tags": []
+}
