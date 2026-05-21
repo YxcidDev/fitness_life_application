@@ -50,3 +50,5 @@ app.*.map.json
 .metadata
 
 .vscode/launch.json
+
+google-services.json
