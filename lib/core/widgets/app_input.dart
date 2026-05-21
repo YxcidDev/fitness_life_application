@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
- 
+
 class AppInput extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final bool obscure;
   final TextInputType keyboardType;
   final Widget? suffix;
- 
+  final ValueChanged<String>? onChanged;
+
   const AppInput({
     super.key,
     required this.controller,
@@ -15,8 +16,9 @@ class AppInput extends StatelessWidget {
     this.obscure = false,
     this.keyboardType = TextInputType.text,
     this.suffix,
+    this.onChanged,
   });
- 
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -28,6 +30,7 @@ class AppInput extends StatelessWidget {
         controller: controller,
         obscureText: obscure,
         keyboardType: keyboardType,
+        onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: kGrey),
