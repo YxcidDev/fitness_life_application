@@ -9,7 +9,7 @@ class HomeRemoteDataSource {
  
     final meals = await supabase
         .from('meals')
-        .select('meal_type, calories, proteins, carbs, fats')
+        .select('meal_type, meal_name, calories, proteins, carbs, fats')
         .eq('user_id', userId)
         .gte('analyzed_at', start)
         .lte('analyzed_at', end);
