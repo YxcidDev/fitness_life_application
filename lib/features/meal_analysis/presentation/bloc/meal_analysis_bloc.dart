@@ -5,6 +5,7 @@ import '../../domain/usecases/save_meal_usecase.dart';
 import '../../domain/entities/meal.dart';
 import 'meal_analysis_event.dart';
 import 'meal_analysis_state.dart';
+import '../../../../core/errors/error_message_mapper.dart';
  
 class MealAnalysisBloc extends Bloc<MealAnalysisEvent, MealAnalysisState> {
   final AnalyzeMealUseCase _analyzeUseCase;
@@ -31,7 +32,7 @@ class MealAnalysisBloc extends Bloc<MealAnalysisEvent, MealAnalysisState> {
       _currentImage = event.image;
       emit(MealAnalysisSuccess(meal, event.image));
     } catch (e) {
-      emit(MealAnalysisError(e.toString()));
+      emit(MealAnalysisError(mapErrorToFriendlyMessage(e)));
     }
   }
  
@@ -42,7 +43,7 @@ class MealAnalysisBloc extends Bloc<MealAnalysisEvent, MealAnalysisState> {
       await _saveUseCase.execute(_currentMeal!, event.mealType);
       emit(MealSavedSuccess());
     } catch (e) {
-      emit(MealAnalysisError(e.toString()));
+      emit(MealAnalysisError(mapErrorToFriendlyMessage(e)));
     }
   }
  

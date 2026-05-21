@@ -6,6 +6,7 @@ import '../../data/datasources/ai_recommendation_remote_datasource.dart';
 import '../../data/repositories/ai_recommendation_repository_impl.dart';
 import 'ai_recommendation_event.dart';
 import 'ai_recommendation_state.dart';
+import '../../../../core/errors/error_message_mapper.dart';
 
 class AIRecommendationBloc
     extends Bloc<AIRecommendationEvent, AIRecommendationState> {
@@ -46,7 +47,7 @@ class AIRecommendationBloc
       final ctx = await _getContext.execute();
       emit(AIRecommendationContextLoaded(ctx));
     } catch (e) {
-      emit(AIRecommendationError(e.toString()));
+      emit(AIRecommendationError(mapErrorToFriendlyMessage(e)));
     }
   }
 
@@ -66,7 +67,7 @@ class AIRecommendationBloc
       );
       emit(AIRecommendationLoaded(context: currentCtx, recommendation: rec));
     } catch (e) {
-      emit(AIRecommendationError(e.toString(), context: currentCtx));
+      emit(AIRecommendationError(mapErrorToFriendlyMessage(e), context: currentCtx));
     }
   }
 
@@ -86,7 +87,7 @@ class AIRecommendationBloc
       final updatedCtx = await _getContext.execute();
       emit(AIRecommendationConsumed(updatedCtx));
     } catch (e) {
-      emit(AIRecommendationError(e.toString(), context: currentCtx));
+      emit(AIRecommendationError(mapErrorToFriendlyMessage(e), context: currentCtx));
     }
   }
 
