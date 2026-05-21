@@ -75,7 +75,6 @@ class _AnalyzeBodyState extends State<_AnalyzeBody> {
       child: SafeArea(
         child: Stack(
           children: [
-            // ── Contenido base siempre visible ──────────────────────────
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -167,7 +166,6 @@ class _AnalyzeBodyState extends State<_AnalyzeBody> {
               ],
             ),
 
-            // ── Overlay de carga / error encima de todo ─────────────────
             BlocBuilder<MealAnalysisBloc, MealAnalysisState>(
               builder: (ctx, state) {
                 if (state is MealAnalysisLoading) {
@@ -221,7 +219,7 @@ class _AnalyzeBodyState extends State<_AnalyzeBody> {
                   );
                 }
 
-                return const SizedBox.shrink(); // sin overlay en estado idle
+                return const SizedBox.shrink();
               },
             ),
           ],
@@ -231,7 +229,6 @@ class _AnalyzeBodyState extends State<_AnalyzeBody> {
   }
 }
 
-/// Fondo oscuro semitransparente que cubre toda la pantalla
 class _FullOverlay extends StatelessWidget {
   final Widget child;
 

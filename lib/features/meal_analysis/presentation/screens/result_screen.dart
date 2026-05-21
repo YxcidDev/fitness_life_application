@@ -17,21 +17,20 @@ class ResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<MealAnalysisBloc, MealAnalysisState>(
       listener: (ctx, state) async {
-        // En el listener de ResultScreen, reemplaza el showDialog existente:
         if (state is MealSavedSuccess) {
           showDialog(
             context: ctx,
             barrierDismissible: false,
             barrierColor: Colors.black.withOpacity(
               0.55,
-            ), // 👈 esto da el fondo oscuro real
+            ),
             builder: (_) =>
                 const SuccessOverlay(message: 'Comida guardada correctamente'),
           );
 
           await Future.delayed(const Duration(seconds: 2));
-          Navigator.pop(ctx); // cierra el dialog
-          Navigator.pop(ctx); // regresa a la pantalla anterior
+          Navigator.pop(ctx);
+          Navigator.pop(ctx);
           ctx.read<MealAnalysisBloc>().add(ResetAnalysisEvent());
         }
         if (state is MealAnalysisError) {
