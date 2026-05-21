@@ -7,19 +7,20 @@ import '../../domain/usecases/get_home_summary_usecase.dart';
 import '../widgets/calorie_card.dart';
 import '../widgets/macro_card.dart';
 import '../widgets/meal_slot.dart';
- 
+import '../../../ai_recommendation/presentation/widgets/ai_insights_section.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
- 
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
- 
+
 class _HomeScreenState extends State<HomeScreen> {
   late final GetHomeSummaryUseCase _useCase;
   HomeSummary? _summary;
   bool _loading = true;
- 
+
   @override
   void initState() {
     super.initState();
@@ -27,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
         HomeRepositoryImpl(HomeRemoteDataSource()));
     _load();
   }
- 
+
   Future<void> _load() async {
     try {
       final summary = await _useCase.execute();
@@ -36,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _loading = false);
     }
   }
- 
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -44,17 +45,21 @@ class _HomeScreenState extends State<HomeScreen> {
         body: Center(child: CircularProgressIndicator(color: kOrange)),
       );
     }
- 
+
     final s = _summary;
     if (s == null) {
       return const Scaffold(
         body: Center(child: Text('Error cargando datos')),
       );
     }
- 
+
     final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
- 
+    final greeting = hour < 12
+        ? 'Buenos días'
+        : hour < 18
+            ? 'Buenas tardes'
+            : 'Buenas noches';
+
     return SafeArea(
       child: RefreshIndicator(
         color: kOrange,
@@ -63,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
+
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: Row(
@@ -71,13 +77,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('$greeting,',
-                              style: const TextStyle(color: kGrey, fontSize: 13)),
-                          Text(s.userName,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 22,
-                                  color: kDark)),
+                          Text(
+                            '$greeting,',
+                            style: const TextStyle(
+                                color: kGrey, fontSize: 13),
+                          ),
+                          Text(
+                            s.userName,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                                color: kDark),
+                          ),
                         ],
                       ),
                     ),
@@ -85,7 +96,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         size: 26, color: kDark),
                     const SizedBox(width: 12),
                     Container(
-                      width: 40, height: 40,
+                      width: 40,
+                      height: 40,
                       decoration: const BoxDecoration(
                           color: kOrange, shape: BoxShape.circle),
                       child: Center(
@@ -103,11 +115,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: CalorieCard(summary: s),
               ),
+
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -116,50 +130,62 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: MacroCard(
                         icon: Icons.fitness_center,
-                        value: '${s.proteinsConsumed.toStringAsFixed(0)}g',
+                        value:
+                            '${s.proteinsConsumed.toStringAsFixed(0)}g',
                         label: 'Proteína',
                         percent: s.proteinsPercent,
-                        percentLabel: '${(s.proteinsPercent * 100).toStringAsFixed(0)}%',
+                        percentLabel:
+                            '${(s.proteinsPercent * 100).toStringAsFixed(0)}%',
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: MacroCard(
                         icon: Icons.rice_bowl_outlined,
-                        value: '${s.carbsConsumed.toStringAsFixed(0)}g',
+                        value:
+                            '${s.carbsConsumed.toStringAsFixed(0)}g',
                         label: 'Carbs',
                         percent: s.carbsPercent,
-                        percentLabel: '${(s.carbsPercent * 100).toStringAsFixed(0)}%',
+                        percentLabel:
+                            '${(s.carbsPercent * 100).toStringAsFixed(0)}%',
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: MacroCard(
                         icon: Icons.water_drop_outlined,
-                        value: '${s.fatsConsumed.toStringAsFixed(0)}g',
+                        value:
+                            '${s.fatsConsumed.toStringAsFixed(0)}g',
                         label: 'Grasas',
                         percent: s.fatsPercent,
-                        percentLabel: '${(s.fatsPercent * 100).toStringAsFixed(0)}%',
+                        percentLabel:
+                            '${(s.fatsPercent * 100).toStringAsFixed(0)}%',
                       ),
                     ),
                   ],
                 ),
               ),
+
               const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
                     const Expanded(
-                        child: Text('Comidas de hoy',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 17,
-                                color: kDark))),
+                      child: Text(
+                        'Comidas de hoy',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                            color: kDark),
+                      ),
+                    ),
                     TextButton(
                       onPressed: () {},
-                      child: const Text('+ Añadir',
-                          style: TextStyle(color: kOrange, fontSize: 14)),
+                      child: const Text(
+                        '+ Añadir',
+                        style: TextStyle(color: kOrange, fontSize: 14),
+                      ),
                     ),
                   ],
                 ),
@@ -168,16 +194,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
                 child: Column(
                   children: [
-                    _buildMealSlot(s, 'breakfast', Icons.egg_outlined,        'Desayuno'),
+                    _buildMealSlot(
+                        s, 'breakfast', Icons.egg_outlined, 'Desayuno'),
                     const SizedBox(height: 10),
-                    _buildMealSlot(s, 'lunch',     Icons.restaurant_outlined,  'Almuerzo'),
+                    _buildMealSlot(
+                        s, 'lunch', Icons.restaurant_outlined, 'Almuerzo'),
                     const SizedBox(height: 10),
-                    _buildMealSlot(s, 'dinner',    Icons.dinner_dining_outlined,'Cena'),
+                    _buildMealSlot(
+                        s, 'dinner', Icons.dinner_dining_outlined, 'Cena'),
                     const SizedBox(height: 10),
-                    _buildMealSlot(s, 'snack',     Icons.cookie_outlined,       'Merienda'),
+                    _buildMealSlot(
+                        s, 'snack', Icons.cookie_outlined, 'Merienda'),
                   ],
                 ),
               ),
+
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: AIInsightsSection(
+                  onMealConsumed: _load,
+                ),
+              ),
+
               const SizedBox(height: 100),
             ],
           ),
@@ -185,13 +224,17 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
- 
-  Widget _buildMealSlot(HomeSummary s, String type, IconData icon, String label) {
-    final registered = s.registeredMealTypes.contains(type);
+
+  Widget _buildMealSlot(
+      HomeSummary s, String type, IconData icon, String label) {
+    final meal = s.meals.where((m) => m.type == type).firstOrNull;
+    final isEmpty = meal == null;
     return MealSlot(
-      icon:    icon,
-      title:   label,
-      isEmpty: !registered,
+      icon: icon,
+      title: label,
+      isEmpty: isEmpty,
+      subtitle: isEmpty ? '' : meal.name,
+      amount: isEmpty ? '' : '${meal.calories.toStringAsFixed(0)} kcal',
     );
   }
 }
