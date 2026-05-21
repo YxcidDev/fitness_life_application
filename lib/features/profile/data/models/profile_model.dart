@@ -1,5 +1,5 @@
 import '../../domain/entities/profile.dart';
- 
+
 class ProfileModel extends Profile {
   const ProfileModel({
     required super.id,
@@ -12,8 +12,10 @@ class ProfileModel extends Profile {
     required super.goal,
     required super.caloriesGoal,
     required super.proteinsGoal,
+    required super.carbsGoal,
+    required super.fatsGoal,
   });
- 
+
   factory ProfileModel.fromJson(
       Map<String, dynamic> profile, Map<String, dynamic> goals) {
     return ProfileModel(
@@ -27,6 +29,8 @@ class ProfileModel extends Profile {
       goal:         profile['goal']      as String,
       caloriesGoal: (goals['calories_goal'] as num).toDouble(),
       proteinsGoal: (goals['proteins_goal'] as num).toDouble(),
+      carbsGoal:    (goals['carbs_goal']    as num).toDouble(),
+      fatsGoal:     (goals['fats_goal']     as num).toDouble(),
     );
   }
 }
