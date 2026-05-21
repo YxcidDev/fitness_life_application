@@ -7,13 +7,15 @@ import '../models/meal_model.dart';
 import '../models/food_item_model.dart';
  
 class MealRemoteDataSource {
+
+  static const String _webhookUrl = 'WEBHOOK_URL';
  
   Future<MealModel> analyzeFromImage(File image) async {
     final bytes  = await image.readAsBytes();
     final base64 = base64Encode(bytes);
  
     final response = await http.post(
-      Uri.parse(Env.webhookUrl),
+      Uri.parse(_webhookUrl),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'image': base64}),
     );
@@ -38,7 +40,7 @@ class MealRemoteDataSource {
       'proteins':    meal.proteins,
       'carbs':       meal.carbs,
       'fats':        meal.fats,
-      'analyzed_at': meal.analyzedAt.toIso8601String(),
+      'analyzed_at': DateTime.now().toIso8601String(),
     }).select().single();
  
     final mealId = inserted['id'] as String;
