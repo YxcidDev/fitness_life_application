@@ -1,3 +1,15 @@
+class MealEntry {
+  final String type;
+  final String name;
+  final double calories;
+
+  const MealEntry({
+    required this.type,
+    required this.name,
+    required this.calories,
+  });
+}
+
 class HomeSummary {
   final double caloriesConsumed;
   final double caloriesGoal;
@@ -9,6 +21,7 @@ class HomeSummary {
   final double fatsGoal;
   final int mealsCount;
   final List<String> registeredMealTypes;
+  final List<MealEntry> meals;
   final String userName;
  
   const HomeSummary({
@@ -22,6 +35,7 @@ class HomeSummary {
     required this.fatsGoal,
     required this.mealsCount,
     required this.registeredMealTypes,
+    required this.meals,
     required this.userName,
   });
  
@@ -39,6 +53,7 @@ class HomeSummary {
       fatsConsumed: 0,     fatsGoal: fatGoal,
       mealsCount: 0,
       registeredMealTypes: [],
+      meals: [],
       userName: userName,
     );
   }
