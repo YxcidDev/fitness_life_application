@@ -6,6 +6,7 @@ import '../widgets/register_scaffold.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/models/user_profile_model.dart';
 import '../../domain/entities/user_profile.dart';
+import '../../data/datasources/device_token_datasource.dart';
  
 class RegisterStep3Screen extends StatefulWidget {
   final String email;
@@ -49,6 +50,7 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
 
     print('>>> 1. Iniciando signUp...');
     final userId = await dataSource.signUp(widget.email, widget.password);
+    await DeviceTokenDataSource().registerDeviceToken();
     print('>>> 2. userId obtenido: $userId');
 
     print('>>> 3. Iniciando signIn...');
