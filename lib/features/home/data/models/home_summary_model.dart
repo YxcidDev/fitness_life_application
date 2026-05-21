@@ -12,6 +12,7 @@ class HomeSummaryModel extends HomeSummary {
     required super.fatsGoal,
     required super.mealsCount,
     required super.registeredMealTypes,
+    required super.meals,
     required super.userName,
   });
  
@@ -22,6 +23,7 @@ class HomeSummaryModel extends HomeSummary {
   }) {
     double totalCal = 0, totalProt = 0, totalCarbs = 0, totalFats = 0;
     final types = <String>[];
+    final entries = <MealEntry>[];
  
     for (final m in meals) {
       totalCal   += (m['calories'] as num).toDouble();
@@ -29,6 +31,12 @@ class HomeSummaryModel extends HomeSummary {
       totalCarbs += (m['carbs']    as num).toDouble();
       totalFats  += (m['fats']     as num).toDouble();
       types.add(m['meal_type'] as String);
+
+      entries.add(MealEntry(
+        type:     m['meal_type'] as String,
+        name:     m['meal_name'] as String,
+        calories: (m['calories'] as num).toDouble(),
+      ));
     }
  
     return HomeSummaryModel(
@@ -42,6 +50,7 @@ class HomeSummaryModel extends HomeSummary {
       fatsGoal:         (goals['fats_goal']     as num).toDouble(),
       mealsCount:       meals.length,
       registeredMealTypes: types,
+      meals:            entries,
       userName:         userName,
     );
   }
