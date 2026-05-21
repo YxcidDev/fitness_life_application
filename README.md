@@ -21,9 +21,13 @@
 
 Fitness Life es una aplicación móvil multiplataforma que da solución al tedioso proceso manual del conteo de calorías mediante inteligencia artificial multimodal. El usuario toma o selecciona una foto de su plato de comida, y la aplicación proporciona un desglose nutricional completo, mostrando calorías totales, macronutrientes y el análisis de cada ingrediente.
 
+Además, Fitness Life cuenta con un asistente nutricional inteligente que recomienda recetas personalizadas según los macros que aún tienes disponibles en el día, y un sistema de recordatorios push automatizados que te avisa cuando es hora de registrar tu desayuno, almuerzo o cena.
+
 ## Características
 
 - **Análisis multimodal de comidas**: identificación visual de ingredientes y cálculo automático de calorías, proteínas, carbohidratos y grasas a partir de fotografías.
+- **Asistente de recomendación nutricional**: sugiere recetas personalizadas según los macronutrientes restantes del día, los ingredientes disponibles y el tipo de comida correspondiente a la hora actual.
+- **Notificaciones push automatizadas**: recordatorios programados de desayuno, almuerzo y cena enviados únicamente a usuarios que aún no han registrado la comida del día, mediante Firebase Cloud Messaging.
 - **Dashboard integrado**: panel principal para el seguimiento de metas diarias de macronutrientes.
 - **Autenticación y perfiles**: gestión segura de acceso y preferencias del usuario (objetivos físicos, peso, altura) protegida con Row Level Security (RLS) en Supabase.
 - **Historial nutricional**: registro detallado de todos los platos consumidos, organizados por tipo de comida (desayuno, almuerzo, cena, snacks).
@@ -41,6 +45,7 @@ El proyecto sigue el patrón **Clean Architecture**, dividido en tres capas prin
 lib/
 ├── app/
 ├── core/
+│   ├── errors/
 │   ├── supabase/
 │   ├── theme/
 │   └── widgets/
@@ -238,6 +243,19 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 | `Breakfast Push Reminder` | Cron `0 8 * * *` | Recordatorio de desayuno |
 | `Lunch Push Reminder` | Cron `0 13 * * *` | Recordatorio de almuerzo |
 | `Dinner Push Reminder` | Cron `0 20 * * *` | Recordatorio de cena |
+
+#### Configuración del nodo HTTP Request (workflows de notificaciones push)
+ 
+Los tres workflows de notificaciones comparten la misma configuración en su nodo **HTTP Request**. Este nodo llama a la API de Firebase Cloud Messaging usando una **Google Service Account**.
+ 
+| Campo | Valor |
+|---|---|
+| Method | `POST` |
+| URL | `https://fcm.googleapis.com/v1/projects/fitness-life-calories/messages:send` |
+| Authentication | `Predefined Credential Type` |
+| Credential Type | `Google Service Account` |
+ 
+> **Credencial requerida**: en n8n ve a **Credentials → New → Google Service Account** y sube el archivo JSON de tu cuenta de servicio de Firebase (lo descargas en Firebase Console → Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada). Asegúrate de que la cuenta tenga el rol **Firebase Cloud Messaging Admin**.
 
 ### Verificación de configuración
 
