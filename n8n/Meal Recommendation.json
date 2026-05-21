@@ -1,0 +1,208 @@
+{
+  "name": "Meal Recommendation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "c02c344e-53e8-4f82-bc55-30cf7ca61234",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "cb175dfe-4db4-4e03-86e8-395185796d54",
+      "name": "Webhook",
+      "webhookId": "c02c344e-53e8-4f82-bc55-30cf7ca61234"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  up.goal,\n  up.weight_kg,\n  dg.calories_goal,\n  dg.proteins_goal,\n  dg.carbs_goal,\n  dg.fats_goal,\n  COALESCE(SUM(m.calories), 0) AS calories_consumed,\n  COALESCE(SUM(m.proteins), 0) AS proteins_consumed,\n  COALESCE(SUM(m.carbs),    0) AS carbs_consumed,\n  COALESCE(SUM(m.fats),     0) AS fats_consumed,\n  COALESCE(\n    json_agg(m.meal_type) FILTER (WHERE m.meal_type IS NOT NULL),\n    '[]'\n  ) AS consumed_meal_types\nFROM public.user_profiles up\nJOIN public.daily_goals dg ON dg.user_id = up.id\nLEFT JOIN public.meals m\n  ON m.user_id = up.id\n  AND m.analyzed_at::date = CURRENT_DATE\nWHERE up.id = '{{ $json.body.user_id }}'\nGROUP BY up.goal, up.weight_kg, dg.calories_goal,\n         dg.proteins_goal, dg.carbs_goal, dg.fats_goal;",
+        "options": {
+          "queryReplacement": "={{ $('Webhook').first().json.body.user_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f003b54e-30db-4786-b9e0-89420ae12c74",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "ZaET3fh1arBu2PLB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Eres un asistente nutricional inteligente y personalizado.\nTu única tarea es generar UNA recomendación de comida basada en el contexto nutricional que recibirás.\n\nREGLAS:\n- La recomendación DEBE ajustarse a las calorías y macros restantes indicados\n- Prioriza los ingredientes disponibles que el usuario mencionó\n- Si no hay ingredientes, sugiere una comida común y saludable\n- Adapta todo al objetivo físico del usuario\n- La explicación (reason) debe ser corta, específica y motivadora — máximo 2 oraciones\n- NO excedas las calorías restantes\n- Si quedan menos de 300 kcal, sugiere algo muy ligero\n\nResponde ÚNICAMENTE con el JSON estructurado. Sin texto adicional, sin markdown, sin explicaciones fuera del JSON."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "39baba00-9781-45b5-b8f7-b2383143529c",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        208
+      ],
+      "id": "00c626bf-12ea-4e3e-a784-28180388ea5d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "OwbwhnJhMZMbuqqi",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"meal_name\": \"Tazón de Pollo con Arroz\",\n  \"meal_type\": \"lunch\",\n  \"calories\": 620,\n  \"protein\": 42,\n  \"carbs\": 55,\n  \"fat\": 18,\n  \"ingredients\": [\"Pollo\", \"Arroz\", \"Brócoli\"],\n  \"reason\": \"Alto en proteína, ideal para ganar músculo. Encaja perfectamente en tus calorías restantes del día.\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        768,
+        208
+      ],
+      "id": "5f9d3f02-06f1-4467-8725-957e3f14f635",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        976,
+        0
+      ],
+      "id": "61348ebd-73fd-4b81-8e07-5c0abd741b50",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── Leer datos del Webhook ─────────────────────────────────────────────\nconst webhookBody = $('Webhook').first().json.body;\nconst userId               = webhookBody.user_id;\nconst availableIngredients = webhookBody.available_ingredients || [];\nconst mealTypeOverride     = webhookBody.meal_type_override   || null;\n\n// ── Leer resultado de la query SQL ────────────────────────────────────\nconst sql = $input.first().json;\n\nconst caloriesGoal     = Number(sql.calories_goal);\nconst proteinsGoal     = Number(sql.proteins_goal);\nconst carbsGoal        = Number(sql.carbs_goal);\nconst fatsGoal         = Number(sql.fats_goal);\nconst caloriesConsumed = Number(sql.calories_consumed);\nconst proteinsConsumed = Number(sql.proteins_consumed);\nconst carbsConsumed    = Number(sql.carbs_consumed);\nconst fatsConsumed     = Number(sql.fats_consumed);\nconst goal             = sql.goal;\nconst weightKg         = Number(sql.weight_kg);\n\n// ── Parsear tipos de comida consumidos ────────────────────────────────\nlet consumedTypes = [];\ntry {\n  consumedTypes = typeof sql.consumed_meal_types === 'string'\n    ? JSON.parse(sql.consumed_meal_types)\n    : sql.consumed_meal_types || [];\n} catch(e) {\n  consumedTypes = [];\n}\n\n// ── Calcular macros restantes ─────────────────────────────────────────\nconst remainingCalories = Math.max(0, caloriesGoal - caloriesConsumed);\nconst remainingProteins = Math.max(0, proteinsGoal - proteinsConsumed);\nconst remainingCarbs    = Math.max(0, carbsGoal    - carbsConsumed);\nconst remainingFats     = Math.max(0, fatsGoal     - fatsConsumed);\n\n// ── Inferir meal_type ─────────────────────────────────────────────────\nfunction inferMealType(consumed, hour) {\n  if (!consumed.includes('breakfast') && hour < 12)              return 'breakfast';\n  if (!consumed.includes('lunch')     && hour >= 10 && hour < 17) return 'lunch';\n  if (!consumed.includes('dinner')    && hour >= 15)             return 'dinner';\n  const slots = ['breakfast', 'lunch', 'dinner', 'snack'];\n  for (const s of slots) {\n    if (!consumed.includes(s)) return s;\n  }\n  return 'snack';\n}\n\nconst hour             = new Date().getHours();\nconst suggestedMealType = mealTypeOverride || inferMealType(consumedTypes, hour);\n\n// ── Mapas de texto ────────────────────────────────────────────────────\nconst goalMap = {\n  lose_weight:         'Perder peso',\n  gain_muscle:         'Ganar músculo',\n  maintain:            'Mantener peso',\n  improve_performance: 'Mejorar rendimiento',\n};\nconst mealTypeMap = {\n  breakfast: 'Desayuno',\n  lunch:     'Almuerzo',\n  dinner:    'Cena',\n  snack:     'Merienda',\n};\n\nconst goalText     = goalMap[goal]                 || goal;\nconst mealTypeText = mealTypeMap[suggestedMealType] || suggestedMealType;\n\nconst ingredientsText = availableIngredients.length > 0\n  ? availableIngredients.join(', ')\n  : 'No se especificaron — sugiere ingredientes comunes y saludables';\n\nconst consumedText = consumedTypes.length > 0\n  ? consumedTypes.map(t => mealTypeMap[t] || t).join(', ')\n  : 'Ninguna aún';\n\n// ── Construir prompt para el AI Agent ─────────────────────────────────\nconst prompt = `Objetivo del usuario: ${goalText}\nPeso: ${weightKg} kg\n\nTipo de comida sugerida: ${mealTypeText} (${suggestedMealType})\n\nCalorías restantes del día: ${remainingCalories.toFixed(0)} kcal\nMacros restantes:\n- Proteína: ${remainingProteins.toFixed(0)}g\n- Carbohidratos: ${remainingCarbs.toFixed(0)}g\n- Grasas: ${remainingFats.toFixed(0)}g\n\nIngredientes disponibles: ${ingredientsText}\nComidas ya registradas hoy: ${consumedText}\n\nGenera UNA recomendación de comida para ${mealTypeText}.`;\n\nreturn [{\n  json: {\n    prompt,\n    suggested_meal_type: suggestedMealType,\n    user_id:             userId,\n    remaining_calories:  remainingCalories,\n    remaining_proteins:  remainingProteins,\n    remaining_carbs:     remainingCarbs,\n    remaining_fats:      remainingFats,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "2bd81a3a-2a35-48cd-abd0-d92413a57652",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "dff6e015-6822-43e2-b97c-d5d0559c60aa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4ed50f942b7ad94b6956f3021d83228613903a43fad82858f064f5a97308a8d6"
+  },
+  "id": "E0vUrQb7dvhgIsck",
+  "tags": []
+}
