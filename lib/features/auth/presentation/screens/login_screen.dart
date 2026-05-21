@@ -7,6 +7,7 @@ import '../../../../core/widgets/app_label.dart';
 import '../../../../core/widgets/dumbbell_icon.dart';
 import '../../../../app/main_shell.dart';
 import 'register_step1_screen.dart';
+import '../../../auth/data/datasources/device_token_datasource.dart';
  
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,6 +29,9 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text.trim(),
       );
+
+      await DeviceTokenDataSource().registerDeviceToken();
+
       if (mounted) {
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (_) => const MainShell()));
