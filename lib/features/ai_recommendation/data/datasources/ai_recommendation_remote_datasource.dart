@@ -1,14 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../../../../core/supabase/supabase_client.dart';
 import '../models/meal_recommendation_model.dart';
 import '../models/nutrition_context_model.dart';
 
 const _kN8nRecommendationWebhook =
-    'WEBHOOK_URL';
+    'http://10.0.2.2:5678/webhook-test/c02c344e-53e8-4f82-bc55-30cf7ca61234';
 
 class AIRecommendationRemoteDataSource {
-
   String normalizeMealType(String value) {
     switch (value.toLowerCase().trim()) {
       case 'desayuno':
@@ -37,12 +37,16 @@ class AIRecommendationRemoteDataSource {
 
     final now = DateTime.now();
 
-    final start =
-        DateTime(now.year, now.month, now.day).toIso8601String();
+    final start = DateTime(now.year, now.month, now.day).toIso8601String();
 
-    final end =
-        DateTime(now.year, now.month, now.day, 23, 59, 59)
-            .toIso8601String();
+    final end = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      23,
+      59,
+      59,
+    ).toIso8601String();
 
     final meals = await supabase
         .from('meals')
@@ -76,61 +80,55 @@ class AIRecommendationRemoteDataSource {
     required List<String> availableIngredients,
     String? overrideMealType,
   }) async {
+    try {
+      final body = jsonEncode({
+        'user_id': userId,
+        'available_ingredients': availableIngredients,
+        if (overrideMealType != null) 'meal_type_override': overrideMealType,
+      });
 
-    final body = jsonEncode({
-      'user_id': userId,
-      'available_ingredients': availableIngredients,
-      if (overrideMealType != null)
-        'meal_type_override': overrideMealType,
-    });
+      final response = await http
+          .post(
+            Uri.parse(_kN8nRecommendationWebhook),
+            headers: {'Content-Type': 'application/json'},
+            body: body,
+          )
+          .timeout(const Duration(seconds: 30));
 
-    final response = await http.post(
-      Uri.parse(_kN8nRecommendationWebhook),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: body,
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'n8n webhook error: ${response.statusCode}\n${response.body}',
-      );
-    }
-
-    final decoded = jsonDecode(response.body);
-
-    if (decoded is List && decoded.isNotEmpty) {
-
-      final firstItem = decoded.first;
-
-      if (firstItem is Map<String, dynamic> &&
-          firstItem.containsKey('output')) {
-
-        final output =
-            Map<String, dynamic>.from(firstItem['output']);
-
-        return MealRecommendationModel.fromJson(output);
+      if (response.statusCode != 200) {
+        throw Exception('webhook_http_${response.statusCode}');
       }
-    }
 
-    if (decoded is Map<String, dynamic>) {
-      return MealRecommendationModel.fromJson(decoded);
-    }
+      final decoded = jsonDecode(response.body);
 
-    throw Exception(
-      'Formato de respuesta inválido desde n8n.',
-    );
+      if (decoded is List && decoded.isNotEmpty) {
+        final firstItem = decoded.first;
+        if (firstItem is Map<String, dynamic> &&
+            firstItem.containsKey('output')) {
+          return MealRecommendationModel.fromJson(
+            Map<String, dynamic>.from(firstItem['output']),
+          );
+        }
+      }
+
+      if (decoded is Map<String, dynamic>) {
+        return MealRecommendationModel.fromJson(decoded);
+      }
+
+      throw Exception('webhook_bad_format');
+    } on SocketException {
+      rethrow;
+    } on Exception {
+      rethrow;
+    } catch (_) {
+      throw Exception('webhook_bad_format');
+    }
   }
 
-  Future<void> consumeRecommendedMeal(
-    MealRecommendationModel rec,
-  ) async {
-
+  Future<void> consumeRecommendedMeal(MealRecommendationModel rec) async {
     final userId = supabase.auth.currentUser!.id;
 
-    final normalizedMealType =
-        normalizeMealType(rec.mealType);
+    final normalizedMealType = normalizeMealType(rec.mealType);
 
     final mealRow = await supabase
         .from('meals')
@@ -151,21 +149,21 @@ class AIRecommendationRemoteDataSource {
     final mealId = mealRow['id'] as String;
 
     final items = rec.ingredients
-        .map((name) => {
-              'meal_id': mealId,
-              'name': name,
-              'grams': 0.0,
-              'calories': 0.0,
-              'proteins': 0.0,
-              'carbs': 0.0,
-              'fats': 0.0,
-            })
+        .map(
+          (name) => {
+            'meal_id': mealId,
+            'name': name,
+            'grams': 0.0,
+            'calories': 0.0,
+            'proteins': 0.0,
+            'carbs': 0.0,
+            'fats': 0.0,
+          },
+        )
         .toList();
 
     if (items.isNotEmpty) {
-      await supabase
-          .from('meal_items')
-          .insert(items);
+      await supabase.from('meal_items').insert(items);
     }
   }
 }
